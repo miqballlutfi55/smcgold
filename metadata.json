@@ -1,0 +1,6 @@
+{
+  "name": "SMC Trade Compounder Pro",
+  "description": "Premium forex & crypto trade compounding, risk management, and risk-to-reward projection system.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
