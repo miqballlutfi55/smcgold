@@ -391,16 +391,22 @@ fun SMCGrowthCurveChart(
         val drawWidth = width - paddingLeft - paddingRight
         val drawHeight = height - paddingTop - paddingBottom
 
-        val minVal = fullDataPoints.minOrNull() ?: 0.0
-        val maxVal = fullDataPoints.maxOrNull() ?: 1.0
-        val delta = if (maxVal - minVal > 0) maxVal - minVal else 1.0
+        val minValRaw = fullDataPoints.minOrNull() ?: 0.0
+        val maxValRaw = fullDataPoints.maxOrNull() ?: 1.0
+        val deltaRaw = if (maxValRaw - minValRaw > 0) maxValRaw - minValRaw else 1.0
+        val minVal = minValRaw - (deltaRaw * 0.10)
+        val maxVal = maxValRaw + (deltaRaw * 0.10)
+        val delta = maxVal - minVal
 
         val pointsCount = fullDataPoints.size
 
+        val xPadding = 10.dp.toPx()
+        val paddedDrawWidth = drawWidth - (xPadding * 2)
+
         // Map data index to screen coordinates within drawing area
         fun getCoordinates(index: Int, value: Double): Offset {
-            if (pointsCount <= 1) return Offset(paddingLeft, paddingTop + drawHeight)
-            val x = paddingLeft + index * (drawWidth / (pointsCount - 1))
+            if (pointsCount <= 1) return Offset(paddingLeft + xPadding, paddingTop + drawHeight)
+            val x = paddingLeft + xPadding + index * (paddedDrawWidth / (pointsCount - 1))
             val normY = (value - minVal) / delta
             val y = paddingTop + drawHeight - (normY * drawHeight).toFloat()
             return Offset(x, y)
@@ -423,8 +429,8 @@ fun SMCGrowthCurveChart(
         )
 
         // Draw light grid lines for min, mid, max values on Y axis
-        val midVal = minVal + delta / 2.0
-        val gridValues = listOf(minVal, midVal, maxVal)
+        val midValRaw = minValRaw + deltaRaw / 2.0
+        val gridValues = listOf(minValRaw, midValRaw, maxValRaw)
         gridValues.forEach { gVal ->
             val coords = getCoordinates(0, gVal)
             drawLine(
@@ -442,7 +448,7 @@ fun SMCGrowthCurveChart(
             val startLoc = getCoordinates(0, fullDataPoints[0])
             path.moveTo(startLoc.x, startLoc.y)
             
-            fillPath.moveTo(paddingLeft, paddingTop + drawHeight)
+            fillPath.moveTo(startLoc.x, paddingTop + drawHeight)
             fillPath.lineTo(startLoc.x, startLoc.y)
 
             for (i in 1 until pointsCount) {
@@ -497,23 +503,23 @@ fun SMCGrowthCurveChart(
 
                 // Draw Y axis labels: Max, Mid, Min Balance (representing Y)
                 canvas.nativeCanvas.drawText(
-                    FormatHelper.formatUsdDecimalCompact(maxVal),
+                    FormatHelper.formatUsdDecimalCompact(maxValRaw),
                     paddingLeft - 6.dp.toPx(),
-                    getCoordinates(0, maxVal).y + 3.dp.toPx(),
+                    getCoordinates(0, maxValRaw).y + 3.dp.toPx(),
                     paint
                 )
 
                 canvas.nativeCanvas.drawText(
-                    FormatHelper.formatUsdDecimalCompact(midVal),
+                    FormatHelper.formatUsdDecimalCompact(midValRaw),
                     paddingLeft - 6.dp.toPx(),
-                    getCoordinates(0, midVal).y + 3.dp.toPx(),
+                    getCoordinates(0, midValRaw).y + 3.dp.toPx(),
                     paint
                 )
 
                 canvas.nativeCanvas.drawText(
-                    FormatHelper.formatUsdDecimalCompact(minVal),
+                    FormatHelper.formatUsdDecimalCompact(minValRaw),
                     paddingLeft - 6.dp.toPx(),
-                    getCoordinates(0, minVal).y + 3.dp.toPx(),
+                    getCoordinates(0, minValRaw).y + 3.dp.toPx(),
                     paint
                 )
 

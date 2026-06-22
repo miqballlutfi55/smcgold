@@ -642,14 +642,14 @@ fun TimelineDayRow(
             // Current day balance and info
             Column {
                 Text(
-                    text = FormatHelper.formatUsd(dayCalculation.endBalance),
+                    text = FormatHelper.formatUsd(dayCalculation.startBalance),
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = String.format(Locale.US, "%.2f Lot", dayCalculation.lotSize) + " • " + FormatHelper.formatIdrCompact(dayCalculation.endBalance, rate),
+                    text = String.format(Locale.US, "%.2f Lot", dayCalculation.lotSize) + " • " + dayCalculation.resultType.name + " • " + FormatHelper.formatIdrCompact(dayCalculation.startBalance, rate),
                     fontSize = 10.sp,
                     color = Color(0xFFA0A0A0),
                     fontWeight = FontWeight.Normal
@@ -662,10 +662,10 @@ fun TimelineDayRow(
             horizontalAlignment = Alignment.End
         ) {
             Text(
-                text = dayCalculation.resultType.name,
-                fontSize = 12.sp,
+                text = FormatHelper.formatUsd(dayCalculation.endBalance),
+                fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
-                color = badgeTextColor
+                color = Color.White
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
@@ -674,7 +674,7 @@ fun TimelineDayRow(
                 } else {
                     "+" + FormatHelper.formatUsd(dayCalculation.profitLoss)
                 },
-                fontSize = 10.sp,
+                fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
                 color = profitColor,
                 textDecoration = if (isLoss) TextDecoration.LineThrough else TextDecoration.None

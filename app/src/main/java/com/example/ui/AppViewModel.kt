@@ -120,9 +120,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         val resolvedInitLot = if (initLotVal <= 0.0) 0.01 else initLotVal
 
         for (day in 1..days) {
-            val profitMade = maxOf(0.0, currentBalance - initialBal)
-            val steps = if (step > 0.0) floor(profitMade / step) else 0.0
-            var currentLot = resolvedInitLot + (steps * resolvedInitLot)
+            val steps = if (step > 0.0) maxOf(1.0, floor(currentBalance / step)) else 1.0
+            var currentLot = steps * resolvedInitLot
             if (currentLot < resolvedInitLot) currentLot = resolvedInitLot
             if (currentLot > maxLotVal) currentLot = maxLotVal
 
