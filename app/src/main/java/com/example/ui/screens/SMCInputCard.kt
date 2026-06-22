@@ -59,19 +59,19 @@ fun SMCInputCard(
 
     Column(
         modifier = modifier
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(12.dp))
             .background(CardBackground)
-            .border(1.dp, Color(0xFF333333), RoundedCornerShape(16.dp))
-            .padding(12.dp)
+            .border(1.dp, Color(0xFF333333), RoundedCornerShape(12.dp))
+            .padding(8.dp)
     ) {
         Text(
             text = label.uppercase(Locale.ROOT),
             color = TextSecondary,
-            fontSize = 11.sp,
+            fontSize = 10.sp,
             fontWeight = FontWeight.Bold,
-            letterSpacing = 1.sp
+            letterSpacing = 0.5.sp
         )
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(2.dp))
         
         OutlinedTextField(
             value = textInput,
@@ -95,10 +95,12 @@ fun SMCInputCard(
                 unfocusedTextColor = TextPrimary,
                 focusedBorderColor = ElectricBlue,
                 unfocusedBorderColor = Color(0xFF333333),
-                cursorColor = ElectricBlue
+                cursorColor = ElectricBlue,
+                unfocusedContainerColor = Color.Transparent,
+                focusedContainerColor = Color.Transparent
             ),
             singleLine = true,
-            textStyle = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp, fontWeight = FontWeight.Bold),
+            textStyle = MaterialTheme.typography.bodyLarge.copy(fontSize = 14.sp, fontWeight = FontWeight.Bold),
             keyboardOptions = KeyboardOptions(
                 keyboardType = if (isInteger) KeyboardType.Number else KeyboardType.Decimal
             ),
@@ -106,11 +108,11 @@ fun SMCInputCard(
         )
         
         if (subText != null) {
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = subText,
                 color = ElectricBlue,
-                fontSize = 11.sp,
+                fontSize = 10.sp,
                 fontWeight = FontWeight.Normal
             )
         }

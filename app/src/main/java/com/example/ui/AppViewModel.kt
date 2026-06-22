@@ -98,12 +98,77 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         initialValue = CompoundProjectionResult(1000.0, 0.0, 0.0, emptyList())
     )
 
-    // Tab 2: Execution Tool inputs
+    // Tab 2: Journal (formerly Execution) Tool inputs
     val execBalance = MutableStateFlow(10000.0)
     val execRiskPercent = MutableStateFlow(2.0)
     val execStopLoss = MutableStateFlow(20.0)
     val execPipValue = MutableStateFlow(10.0) // USD per standard lot per pip
     val execRewardPercent = MutableStateFlow(6.0) // Target reward exposure %
+
+    // Journal Timeline Tracking
+    val journalDays = MutableStateFlow(30)
+    private val _journalOverrides = MutableStateFlow<Map<Int, Int>>(emptyMap()) // 0 = Empty, 1 = Win, 2 = Loss
+    val journalOverrides = _journalOverrides.asStateFlow()
+
+    fun cycleJournalDay(dayIndex: Int) {
+        val currentMap = _journalOverrides.value.toMutableMap()
+        val currentMode = currentMap[dayIndex] ?: 0
+        val nextMode = when (currentMode) {
+            0 -> 1 // Win
+            1 -> 2 // Loss
+            else -> 0 // Empty
+        }
+        currentMap[dayIndex] = nextMode
+        _journalOverrides.value = currentMap
+    }
+
+    data class JournalDayCalc(
+        val day: Int,
+        val state: Int,
+        val startBalance: Double,
+        val pLossAmount: Double,
+        val endBalance: Double
+    )
+
+    val journalProjectionResult: StateFlow<List<JournalDayCalc>> = combine(
+        listOf(execBalance, execRiskPercent, execRewardPercent, journalDays, _journalOverrides)
+    ) { array ->
+        val startBal = array[0] as Double
+        val riskPct = array[1] as Double
+        val rewardPct = array[2] as Double
+        val days = array[3] as Int
+        @Suppress("UNCHECKED_CAST")
+        val overrides = array[4] as Map<Int, Int>
+
+        val list = ArrayList<JournalDayCalc>()
+        var currentBalance = startBal
+
+        for (day in 1..days) {
+            val state = overrides[day] ?: 0
+            val pLoss = when (state) {
+                1 -> currentBalance * (rewardPct / 100.0)
+                2 -> -(currentBalance * (riskPct / 100.0))
+                else -> 0.0
+            }
+            
+            val endBal = currentBalance + pLoss
+            list.add(
+                JournalDayCalc(
+                    day = day,
+                    state = state,
+                    startBalance = currentBalance,
+                    pLossAmount = pLoss,
+                    endBalance = endBal
+                )
+            )
+            currentBalance = endBal
+        }
+        list
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
 
     private fun calculateProjection(
         initialBal: Double,
@@ -118,6 +183,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         val list = ArrayList<DayCalculation>()
         var currentBalance = initialBal
         val resolvedInitLot = if (initLotVal <= 0.0) 0.01 else initLotVal
+        val resolvedRr = if (rr <= 0.0) 1.0 else rr
 
         for (day in 1..days) {
             val steps = if (step > 0.0) maxOf(1.0, floor(currentBalance / step)) else 1.0
@@ -126,7 +192,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             if (currentLot > maxLotVal) currentLot = maxLotVal
 
             val winAmount = currentLot * pips * 10.0
-            val lossAmount = winAmount / rr
+            val lossAmount = winAmount / resolvedRr
 
             val overrideResult = overrides[day] ?: DayResult.PROJECTED
 

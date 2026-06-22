@@ -76,7 +76,7 @@ sealed class NavigationTab(val route: String, val title: String, val icon: @Comp
     )
     object Execution : NavigationTab(
         route = "execution",
-        title = "Execution",
+        title = "Jurnal",
         icon = { Icon(Icons.Default.PlayArrow, contentDescription = "Instant lot calculator") }
     )
     object Analytics : NavigationTab(

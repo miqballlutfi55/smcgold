@@ -54,6 +54,9 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.AppViewModel
@@ -94,7 +97,7 @@ fun CompoundScreen(
     val projections by viewModel.projectionResult.collectAsState()
 
     var isHeaderCardExpanded by remember { mutableStateOf(true) }
-    var isInputsExpanded by remember { mutableStateOf(false) } // collapsed by default to allow full view timeline immediately!
+    var isInputsExpanded by remember { mutableStateOf(true) } // Always show inputs
     var showSaveDialog by remember { mutableStateOf(false) }
     var savePlanName by remember { mutableStateOf("") }
 
@@ -342,32 +345,19 @@ fun CompoundScreen(
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = ElectricBlue,
-                                letterSpacing = 1.sp
+                                letterSpacing = 1.sp,
+                                modifier = Modifier.padding(bottom = 10.dp) // padding remains on the text if desired, or we handle it in animated visibility
                             )
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = if (isInputsExpanded) "HIDE" else "SHOW ALL",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = TextSecondary,
-                                    modifier = Modifier.padding(end = 4.dp)
-                                )
-                                Icon(
-                                    imageVector = if (isInputsExpanded) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
-                                    contentDescription = "Toggle parameter inputs",
-                                    tint = TextSecondary,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                            }
+                            Icon(
+                                imageVector = if (isInputsExpanded) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
+                                contentDescription = "Toggle parameter inputs",
+                                tint = TextSecondary,
+                                modifier = Modifier.size(24.dp)
+                            )
                         }
 
-                        AnimatedVisibility(
-                            visible = isInputsExpanded,
-                            enter = expandVertically(),
-                            exit = shrinkVertically()
-                        ) {
+                        androidx.compose.animation.AnimatedVisibility(visible = isInputsExpanded) {
                             Column(
-                                modifier = Modifier.padding(top = 10.dp),
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 // Row 1: INITIAL ($) & KURS IDR (2-Column Proportional Mobile Setup!)
@@ -452,7 +442,6 @@ fun CompoundScreen(
                     }
                 }
             }
-
             // 4. TIMELINE HEADER
             item {
                 Row(
@@ -641,15 +630,29 @@ fun TimelineDayRow(
 
             // Current day balance and info
             Column {
-                Text(
-                    text = FormatHelper.formatUsd(dayCalculation.startBalance),
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = FormatHelper.formatUsd(dayCalculation.startBalance),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = String.format(Locale.US, "%.2f Lot", dayCalculation.lotSize),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFECA332)
+                    )
+                }
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = String.format(Locale.US, "%.2f Lot", dayCalculation.lotSize) + " • " + dayCalculation.resultType.name + " • " + FormatHelper.formatIdrCompact(dayCalculation.startBalance, rate),
+                    text = buildAnnotatedString {
+                        if (dayCalculation.resultType != com.example.ui.DayResult.PROJECTED) {
+                            append("${dayCalculation.resultType.name} • ")
+                        }
+                        append(FormatHelper.formatIdr(dayCalculation.startBalance, rate))
+                    },
                     fontSize = 10.sp,
                     color = Color(0xFFA0A0A0),
                     fontWeight = FontWeight.Normal
@@ -669,12 +672,21 @@ fun TimelineDayRow(
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
-                text = if (isLoss) {
-                    "-" + FormatHelper.formatUsd(kotlin.math.abs(dayCalculation.profitLoss))
-                } else {
-                    "+" + FormatHelper.formatUsd(dayCalculation.profitLoss)
+                text = FormatHelper.formatIdr(dayCalculation.endBalance, rate),
+                fontSize = 10.sp,
+                color = Color(0xFFA0A0A0),
+                fontWeight = FontWeight.Normal
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = buildAnnotatedString {
+                    append(if (isLoss) "-" else "+")
+                    append(FormatHelper.formatUsd(kotlin.math.abs(dayCalculation.profitLoss)))
+                    append(" (")
+                    append(FormatHelper.formatIdr(kotlin.math.abs(dayCalculation.profitLoss), rate))
+                    append(")")
                 },
-                fontSize = 11.sp,
+                fontSize = 10.sp,
                 fontWeight = FontWeight.Bold,
                 color = profitColor,
                 textDecoration = if (isLoss) TextDecoration.LineThrough else TextDecoration.None

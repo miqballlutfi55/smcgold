@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
@@ -64,6 +65,8 @@ fun ExecutionScreen(
     val pipVal by viewModel.execPipValue.collectAsState()
     val execRewardPercent by viewModel.execRewardPercent.collectAsState()
     val kursRate by viewModel.kursIdr.collectAsState()
+    val journalDays by viewModel.journalDays.collectAsState()
+    val journalTimeline by viewModel.journalProjectionResult.collectAsState()
 
     // Calculations
     val totalRiskUsd = execBal * (riskPercent / 100.0)
@@ -96,12 +99,12 @@ fun ExecutionScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             
             // 1. TITLE ROW
             item {
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 Column {
                     Text(
                         text = "RISK CALCULATOR",
@@ -111,7 +114,7 @@ fun ExecutionScreen(
                         letterSpacing = 1.sp
                     )
                     Text(
-                        text = "INSTANT POSITION & LOT EXECUTION",
+                        text = "INSTANT POSITION & JURNAL TRADING",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = ElectricBlue,
@@ -125,13 +128,13 @@ fun ExecutionScreen(
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(1.dp, riskAdviceColor.copy(alpha = 0.5f), RoundedCornerShape(24.dp))
+                        .border(1.dp, riskAdviceColor.copy(alpha = 0.5f), RoundedCornerShape(16.dp))
                         .testTag("execution_output_card"),
-                    shape = RoundedCornerShape(24.dp),
+                    shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(containerColor = CardBackground)
                 ) {
                     Column(
-                        modifier = Modifier.padding(20.dp)
+                        modifier = Modifier.padding(16.dp)
                     ) {
                         Text(
                             text = "SUGGESTED LOT SIZE",
@@ -149,7 +152,7 @@ fun ExecutionScreen(
                             color = riskAdviceColor
                         )
 
-                        Spacer(modifier = Modifier.height(14.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -158,19 +161,19 @@ fun ExecutionScreen(
                             Column {
                                 Text(
                                     text = "MONEY AT RISK",
-                                    fontSize = 11.sp,
+                                    fontSize = 10.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = TextSecondary
                                 )
                                 Text(
                                     text = FormatHelper.formatUsd(totalRiskUsd),
-                                    fontSize = 15.sp,
+                                    fontSize = 13.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = TextPrimary
                                 )
                                 Text(
                                     text = FormatHelper.formatIdr(totalRiskUsd, kursRate),
-                                    fontSize = 11.sp,
+                                    fontSize = 10.sp,
                                     color = TextSecondary
                                 )
                             }
@@ -178,27 +181,27 @@ fun ExecutionScreen(
                             Column(horizontalAlignment = Alignment.End) {
                                 Text(
                                     text = "RISK EXPOSURE",
-                                    fontSize = 11.sp,
+                                    fontSize = 10.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = TextSecondary
                                 )
                                 Text(
                                     text = "$riskPercent%",
-                                    fontSize = 15.sp,
+                                    fontSize = 13.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = riskAdviceColor
                                 )
                                 Text(
                                     text = "of total account",
-                                    fontSize = 11.sp,
+                                    fontSize = 10.sp,
                                     color = TextSecondary
                                 )
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
                         Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(Color(0xFF333333)))
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -208,19 +211,19 @@ fun ExecutionScreen(
                             Column {
                                 Text(
                                     text = "MONEY AT REWARD",
-                                    fontSize = 11.sp,
+                                    fontSize = 10.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = TextSecondary
                                 )
                                 Text(
                                     text = FormatHelper.formatUsd(totalRewardUsd),
-                                    fontSize = 15.sp,
+                                    fontSize = 13.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = TextPrimary
                                 )
                                 Text(
                                     text = FormatHelper.formatIdr(totalRewardUsd, kursRate),
-                                    fontSize = 11.sp,
+                                    fontSize = 10.sp,
                                     color = TextSecondary
                                 )
                             }
@@ -228,19 +231,19 @@ fun ExecutionScreen(
                             Column(horizontalAlignment = Alignment.End) {
                                 Text(
                                     text = "REWARD EXPOSURE",
-                                    fontSize = 11.sp,
+                                    fontSize = 10.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = TextSecondary
                                 )
                                 Text(
                                     text = String.format(Locale.US, "%.1f%%", execRewardPercent),
-                                    fontSize = 15.sp,
+                                    fontSize = 13.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = NeonGreen
                                 )
                                 Text(
                                     text = "Suggested TP: ${String.format(Locale.US, "%.1f", calculatedTpPips)} Pips",
-                                    fontSize = 11.sp,
+                                    fontSize = 10.sp,
                                     color = NeonGreen,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -253,7 +256,7 @@ fun ExecutionScreen(
             // 3. INPUT CONFIGS
             item {
                 Column(
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
                         text = "RISK & REWARD PARAMETERS",
@@ -322,6 +325,20 @@ fun ExecutionScreen(
                             },
                             modifier = Modifier.weight(1f)
                         )
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        SMCInputCard(
+                            label = "JOURNAL DAYS",
+                            value = journalDays.toDouble(),
+                            onValueChange = { viewModel.journalDays.value = it.toInt() },
+                            isInteger = true,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Spacer(modifier = Modifier.weight(1f))
                     }
                 }
             }
@@ -414,6 +431,116 @@ fun ExecutionScreen(
                                 color = TextSecondary,
                                 lineHeight = 16.sp
                             )
+                        }
+                    }
+                }
+            }
+
+            // 6. JOURNAL TIMELINE HEADER
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "TRADING JOURNAL TIMELINE",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextSecondary,
+                    letterSpacing = 1.sp,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+            }
+
+            // 7. JOURNAL TIMELINE ITEMS
+            items(journalTimeline) { dayData ->
+                val hapticLocal = LocalHapticFeedback.current
+                val isProfit = dayData.state == 1
+                val isLoss = dayData.state == 2
+                val isEmpty = dayData.state == 0
+                
+                val cardColor = when {
+                    isProfit -> NeonGreen.copy(alpha = 0.1f)
+                    isLoss -> CrimsonRed.copy(alpha = 0.1f)
+                    else -> CardBackground
+                }
+                
+                val borderColor = when {
+                    isProfit -> NeonGreen.copy(alpha = 0.5f)
+                    isLoss -> CrimsonRed.copy(alpha = 0.5f)
+                    else -> Color(0xFF333333)
+                }
+
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable {
+                            hapticLocal.performHapticFeedback(HapticFeedbackType.LongPress)
+                            viewModel.cycleJournalDay(dayData.day)
+                        }
+                        .border(1.dp, borderColor, RoundedCornerShape(12.dp)),
+                    colors = CardDefaults.cardColors(containerColor = cardColor),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        // Left Column: Day Label + Stats if active
+                        Column {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = "DAY ${dayData.day}",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Black,
+                                    color = if (isEmpty) TextSecondary else TextPrimary
+                                )
+                                if (!isEmpty) {
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = if (isProfit) "PROFIT (${execRewardPercent}%)" else "LOSS (${riskPercent}%)",
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (isProfit) NeonGreen else CrimsonRed
+                                    )
+                                }
+                            }
+                            
+                            if (isEmpty) {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "Tap to mark profit, double tap for loss (cumulative)",
+                                    fontSize = 10.sp,
+                                    color = TextSecondary
+                                )
+                            }
+                        }
+                        
+                        // Right Column: Values if active
+                        if (!isEmpty) {
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text(
+                                    text = FormatHelper.formatUsd(dayData.endBalance),
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = TextPrimary
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = FormatHelper.formatIdr(dayData.endBalance, kursRate),
+                                    fontSize = 10.sp,
+                                    color = TextSecondary
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = (if (isProfit) "+" else "") + FormatHelper.formatUsd(dayData.pLossAmount) + 
+                                           " (" + FormatHelper.formatIdr(kotlin.math.abs(dayData.pLossAmount), kursRate) + ")",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (isProfit) NeonGreen else CrimsonRed
+                                )
+                            }
                         }
                     }
                 }
