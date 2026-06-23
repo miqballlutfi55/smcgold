@@ -434,9 +434,9 @@ fun AnalyticsScreen(
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.Top
                 ) {
-                    Column {
+                    Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
                         Text(
                             text = "ANALYTICS DESK",
                             fontSize = 24.sp,
@@ -452,7 +452,10 @@ fun AnalyticsScreen(
                             letterSpacing = 1.5.sp
                         )
                     }
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.padding(top = 4.dp)
+                    ) {
                         val context = androidx.compose.ui.platform.LocalContext.current
                         val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
                         androidx.compose.material3.IconButton(
@@ -2011,7 +2014,9 @@ fun TimelineDayRow(
                         text = String.format(Locale.US, "%.2f Lot", dayCalculation.lotSize),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFFECA332)
+                        color = Color(0xFFECA332),
+                        maxLines = 1,
+                        softWrap = false
                     )
                 }
                 Spacer(modifier = Modifier.height(2.dp))
@@ -2155,13 +2160,69 @@ fun ExecutionScreen(
                     Column(
                         modifier = Modifier.padding(16.dp)
                     ) {
-                        Text(
-                            text = "SUGGESTED LOT SIZE",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = TextSecondary,
-                            letterSpacing = 2.sp
-                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "SUGGESTED LOT SIZE",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = TextSecondary,
+                                letterSpacing = 2.sp
+                            )
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                val context = androidx.compose.ui.platform.LocalContext.current
+                                IconButton(
+                                    onClick = {
+                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        com.example.JournalExportHelper.exportToCsv(context, journalTimeline)
+                                    },
+                                    modifier = Modifier.size(32.dp).background(Color(0xFF0F2618), RoundedCornerShape(8.dp))
+                                ) {
+                                    Text("CSV", color = ElectricBlue, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                }
+                                IconButton(
+                                    onClick = {
+                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        com.example.JournalExportHelper.exportToPdf(context, journalTimeline)
+                                    },
+                                    modifier = Modifier.size(32.dp).background(Color(0xFF260F0F), RoundedCornerShape(8.dp))
+                                ) {
+                                    Text("PDF", color = CrimsonRed, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                }
+                                IconButton(
+                                    onClick = {
+                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        showLoadDialog = true
+                                    },
+                                    modifier = Modifier.size(32.dp).background(ElectricBlue, RoundedCornerShape(8.dp))
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.List,
+                                        contentDescription = "Load Journal",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                                IconButton(
+                                    onClick = {
+                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        savePlanName = currentLoadedName ?: ""
+                                        showSaveDialog = true
+                                    },
+                                    modifier = Modifier.size(32.dp).background(NeonGreen, RoundedCornerShape(8.dp))
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Save,
+                                        contentDescription = "Save Journal",
+                                        tint = Color.Black,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+                        }
                         Spacer(modifier = Modifier.height(4.dp))
                         
                         Text(
@@ -2446,7 +2507,7 @@ fun ExecutionScreen(
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.Start
                 ) {
                     Text(
                         text = "TRADING JOURNAL TIMELINE",
@@ -2456,56 +2517,6 @@ fun ExecutionScreen(
                         letterSpacing = 1.sp,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        val context = androidx.compose.ui.platform.LocalContext.current
-                        IconButton(
-                            onClick = {
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                com.example.JournalExportHelper.exportToCsv(context, journalTimeline)
-                            },
-                            modifier = Modifier.size(32.dp).background(Color(0xFF0F2618), RoundedCornerShape(8.dp))
-                        ) {
-                            Text("CSV", color = ElectricBlue, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                        }
-                        IconButton(
-                            onClick = {
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                com.example.JournalExportHelper.exportToPdf(context, journalTimeline)
-                            },
-                            modifier = Modifier.size(32.dp).background(Color(0xFF260F0F), RoundedCornerShape(8.dp))
-                        ) {
-                            Text("PDF", color = CrimsonRed, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                        }
-                        IconButton(
-                            onClick = {
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                showLoadDialog = true
-                            },
-                            modifier = Modifier.size(32.dp).background(ElectricBlue, RoundedCornerShape(8.dp))
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.List,
-                                contentDescription = "Load Journal",
-                                tint = Color.White,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                        IconButton(
-                            onClick = {
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                savePlanName = currentLoadedName ?: ""
-                                showSaveDialog = true
-                            },
-                            modifier = Modifier.size(32.dp).background(NeonGreen, RoundedCornerShape(8.dp))
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Save,
-                                contentDescription = "Save Journal",
-                                tint = Color.Black,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                    }
                 }
             }
 
@@ -3243,6 +3254,31 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 }
 object JournalExportHelper {
 
+    private fun shareFile(context: Context, uri: android.net.Uri, mimeType: String) {
+        val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+            type = mimeType
+            putExtra(android.content.Intent.EXTRA_STREAM, uri)
+            addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        context.startActivity(android.content.Intent.createChooser(intent, "Share Exported File"))
+    }
+
+    private fun createFileUri(context: Context, fileName: String, mimeType: String): android.net.Uri? {
+        val contentValues = android.content.ContentValues().apply {
+            put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+            put(android.provider.MediaStore.MediaColumns.MIME_TYPE, mimeType)
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                put(android.provider.MediaStore.MediaColumns.RELATIVE_PATH, android.os.Environment.DIRECTORY_DOWNLOADS)
+            }
+        }
+        val collection = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+            android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI
+        } else {
+            android.provider.MediaStore.Files.getContentUri("external")
+        }
+        return context.contentResolver.insert(collection, contentValues)
+    }
+
     fun exportToCsv(context: Context, history: List<AppViewModel.JournalDayCalc>) {
         try {
             val sb = java.lang.StringBuilder()
@@ -3253,11 +3289,17 @@ object JournalExportHelper {
                 sb.append("${day.day},$statusStr,${day.startBalance},${day.pLossAmount},${day.endBalance}\n")
             }
             val fileName = "JournalExport_${System.currentTimeMillis()}.csv"
-            val file = File(context.getExternalFilesDir(null), fileName)
-            val outputStream = FileOutputStream(file)
-            outputStream.write(sb.toString().toByteArray())
-            outputStream.close()
-            Toast.makeText(context, "Exported CSV to: ${file.absolutePath}", Toast.LENGTH_LONG).show()
+            val uri = createFileUri(context, fileName, "text/csv")
+            
+            if (uri != null) {
+                context.contentResolver.openOutputStream(uri)?.use { outputStream ->
+                    outputStream.write(sb.toString().toByteArray())
+                }
+                Toast.makeText(context, "Exported to Downloads", Toast.LENGTH_SHORT).show()
+                shareFile(context, uri, "text/csv")
+            } else {
+                Toast.makeText(context, "Error creating CSV file", Toast.LENGTH_SHORT).show()
+            }
         } catch (e: Exception) {
             e.printStackTrace()
             Toast.makeText(context, "Error exporting CSV", Toast.LENGTH_SHORT).show()
@@ -3302,11 +3344,19 @@ object JournalExportHelper {
             pdfDocument.finishPage(page)
             
             val fileName = "JournalExport_${System.currentTimeMillis()}.pdf"
-            val file = File(context.getExternalFilesDir(null), fileName)
-            pdfDocument.writeTo(FileOutputStream(file))
-            pdfDocument.close()
+            val uri = createFileUri(context, fileName, "application/pdf")
             
-            Toast.makeText(context, "Exported PDF to: ${file.absolutePath}", Toast.LENGTH_LONG).show()
+            if (uri != null) {
+                context.contentResolver.openOutputStream(uri)?.use { outputStream ->
+                    pdfDocument.writeTo(outputStream)
+                }
+                pdfDocument.close()
+                Toast.makeText(context, "Exported to Downloads", Toast.LENGTH_SHORT).show()
+                shareFile(context, uri, "application/pdf")
+            } else {
+                pdfDocument.close()
+                Toast.makeText(context, "Error creating PDF file", Toast.LENGTH_SHORT).show()
+            }
         } catch (e: Exception) {
             e.printStackTrace()
             Toast.makeText(context, "Error exporting PDF", Toast.LENGTH_SHORT).show()
@@ -3321,11 +3371,17 @@ object JournalExportHelper {
                 sb.append("${day.day},${day.startBalance},${day.lotSize},${day.profitLoss},${day.endBalance},${day.resultType.name}\n")
             }
             val fileName = "CompoundExport_${System.currentTimeMillis()}.csv"
-            val file = File(context.getExternalFilesDir(null), fileName)
-            val outputStream = FileOutputStream(file)
-            outputStream.write(sb.toString().toByteArray())
-            outputStream.close()
-            Toast.makeText(context, "Exported CSV to: ${file.absolutePath}", Toast.LENGTH_LONG).show()
+            val uri = createFileUri(context, fileName, "text/csv")
+            
+            if (uri != null) {
+                context.contentResolver.openOutputStream(uri)?.use { outputStream ->
+                    outputStream.write(sb.toString().toByteArray())
+                }
+                Toast.makeText(context, "Exported to Downloads", Toast.LENGTH_SHORT).show()
+                shareFile(context, uri, "text/csv")
+            } else {
+                Toast.makeText(context, "Error creating CSV file", Toast.LENGTH_SHORT).show()
+            }
         } catch (e: Exception) {
             e.printStackTrace()
             Toast.makeText(context, "Error exporting CSV", Toast.LENGTH_SHORT).show()
@@ -3368,11 +3424,19 @@ object JournalExportHelper {
             pdfDocument.finishPage(page)
             
             val fileName = "CompoundExport_${System.currentTimeMillis()}.pdf"
-            val file = File(context.getExternalFilesDir(null), fileName)
-            pdfDocument.writeTo(FileOutputStream(file))
-            pdfDocument.close()
+            val uri = createFileUri(context, fileName, "application/pdf")
             
-            Toast.makeText(context, "Exported PDF to: ${file.absolutePath}", Toast.LENGTH_LONG).show()
+            if (uri != null) {
+                context.contentResolver.openOutputStream(uri)?.use { outputStream ->
+                    pdfDocument.writeTo(outputStream)
+                }
+                pdfDocument.close()
+                Toast.makeText(context, "Exported to Downloads", Toast.LENGTH_SHORT).show()
+                shareFile(context, uri, "application/pdf")
+            } else {
+                pdfDocument.close()
+                Toast.makeText(context, "Error creating PDF file", Toast.LENGTH_SHORT).show()
+            }
         } catch (e: Exception) {
             e.printStackTrace()
             Toast.makeText(context, "Error exporting PDF", Toast.LENGTH_SHORT).show()
