@@ -2003,23 +2003,12 @@ fun TimelineDayRow(
 
             // Current day balance and info
             Column {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = FormatHelper.formatUsd(dayCalculation.startBalance),
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = String.format(Locale.US, "%.2f Lot", dayCalculation.lotSize),
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFFECA332),
-                        maxLines = 1,
-                        softWrap = false
-                    )
-                }
+                Text(
+                    text = FormatHelper.formatUsd(dayCalculation.startBalance),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = buildAnnotatedString {
@@ -2031,6 +2020,15 @@ fun TimelineDayRow(
                     fontSize = 10.sp,
                     color = Color(0xFFA0A0A0),
                     fontWeight = FontWeight.Normal
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = String.format(Locale.US, "%.2f Lot", dayCalculation.lotSize),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFFECA332),
+                    maxLines = 1,
+                    softWrap = false
                 )
             }
         }
@@ -2088,6 +2086,10 @@ fun ExecutionScreen(
     val pipPreset by viewModel.execPipValuePreset.collectAsState() 
     val currentLoadedName by viewModel.loadedJournalPlanName.collectAsState()
     
+    val isPropFirmMode by viewModel.isPropFirmMode.collectAsState()
+    val maxDailyDrawdown by viewModel.maxDailyDrawdown.collectAsState()
+    val maxTotalDrawdown by viewModel.maxTotalDrawdown.collectAsState()
+    
     var isInputsExpanded by remember { mutableStateOf(true) } // Default true so it's visible, user can toggle it
     var showSaveDialog by remember { mutableStateOf(false) }
     var showLoadDialog by remember { mutableStateOf(false) }
@@ -2095,10 +2097,13 @@ fun ExecutionScreen(
     var showActionMenu by remember { mutableStateOf(false) }
 
     // Calculations
-    val totalRiskUsd = execBal * (riskPercent / 100.0)
+    val baseEquity = if (isPropFirmMode) execBal * (maxTotalDrawdown / 100.0) else execBal
+    val dailyLimitUsd = if (isPropFirmMode) execBal * (maxDailyDrawdown / 100.0) else 0.0
+
+    val totalRiskUsd = baseEquity * (riskPercent / 100.0)
     val totalRiskIdr = totalRiskUsd * kursRate
 
-    val totalRewardUsd = execBal * (execRewardPercent / 100.0)
+    val totalRewardUsd = baseEquity * (execRewardPercent / 100.0)
     val totalRewardIdr = totalRewardUsd * kursRate
 
     // Formula: Suggested Lot = Risk $ / (Stop Loss pips * Pip Value per standard lot)
@@ -2209,6 +2214,54 @@ fun ExecutionScreen(
                                 }
                             )
                         }
+                    }
+                }
+            }
+
+            // SEGMENTED BUTTON FOR PROP FIRM MODE
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(CardBackground)
+                        .padding(4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    val pActive = !isPropFirmMode
+                    val propActive = isPropFirmMode
+                    
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(if (pActive) ElectricBlue else Color.Transparent)
+                            .clickable { viewModel.isPropFirmMode.value = false }
+                            .padding(vertical = 12.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Personal Account",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (pActive) Color.White else TextSecondary
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(if (propActive) ElectricBlue else Color.Transparent)
+                            .clickable { viewModel.isPropFirmMode.value = true }
+                            .padding(vertical = 12.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Prop Firm Mode",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (propActive) Color.White else TextSecondary
+                        )
                     }
                 }
             }
@@ -2395,7 +2448,7 @@ fun ExecutionScreen(
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
                                     SMCInputCard(
-                                        label = "BALANCE ($)",
+                                        label = if (isPropFirmMode) "ACCOUNT SIZE ($)" else "BALANCE ($)",
                                         value = execBal,
                                         onValueChange = { viewModel.execBalance.value = it },
                                         subText = FormatHelper.formatIdr(execBal, kursRate),
@@ -2407,6 +2460,52 @@ fun ExecutionScreen(
                                         onValueChange = { viewModel.execRiskPercent.value = it },
                                         modifier = Modifier.weight(1f)
                                     )
+                                }
+
+                                if (isPropFirmMode) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        SMCInputCard(
+                                            label = "MAX DAILY DRAWDOWN (%)",
+                                            value = maxDailyDrawdown,
+                                            onValueChange = { viewModel.maxDailyDrawdown.value = it },
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                        SMCInputCard(
+                                            label = "MAX TOTAL DRAWDOWN (%)",
+                                            value = maxTotalDrawdown,
+                                            onValueChange = { viewModel.maxTotalDrawdown.value = it },
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                    }
+                                    
+                                    // Prop Firm Info Card
+                                    Card(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        colors = CardDefaults.cardColors(containerColor = DarkBackground),
+                                        shape = RoundedCornerShape(8.dp),
+                                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF333333))
+                                    ) {
+                                        Column(modifier = Modifier.padding(12.dp)) {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween
+                                            ) {
+                                                Text("True Equity:", color = TextSecondary, fontSize = 11.sp)
+                                                Text(FormatHelper.formatUsd(baseEquity), color = ElectricBlue, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                            }
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween
+                                            ) {
+                                                Text("Daily Limit:", color = TextSecondary, fontSize = 11.sp)
+                                                Text(FormatHelper.formatUsd(dailyLimitUsd), color = CrimsonRed, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                            }
+                                        }
+                                    }
                                 }
              
                                 Row(
@@ -2974,6 +3073,9 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     // Tab 2: Journal (formerly Execution) Tool inputs
     val execBalance = MutableStateFlow(10000.0)
+    val isPropFirmMode = MutableStateFlow(false)
+    val maxDailyDrawdown = MutableStateFlow(5.0)
+    val maxTotalDrawdown = MutableStateFlow(10.0)
     val execRiskPercent = MutableStateFlow(2.0)
     val execStopLoss = MutableStateFlow(20.0)
     val execPipValue = MutableStateFlow(10.0) // USD per standard lot per pip
