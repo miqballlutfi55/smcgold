@@ -44,6 +44,7 @@ android {
       signingConfig = signingConfigs.getByName("release")
     }
     debug {
+      signingConfig = signingConfigs.getByName("debugConfig")
     }
   }
   compileOptions {
@@ -118,3 +119,38 @@ dependencies {
   "ksp"(libs.androidx.room.compiler)
   "ksp"(libs.moshi.kotlin.codegen)
 }
+
+tasks.register("mergeCode") {
+    doLast {
+        val srcDir = file("src/main/java/com/example")
+        val targetFile = file("src/main/java/com/example/MainActivity2.kt")
+        
+        val imports = mutableSetOf<String>()
+        val codeLines = mutableListOf<String>()
+        
+        srcDir.walkTopDown().filter { it.isFile && it.extension == "kt" && it.name != "MainActivity2.kt" }.forEach { file ->
+            val lines = file.readLines()
+            var inImports = true
+            for (line in lines) {
+                if (line.startsWith("package ")) continue
+                if (line.startsWith("import ")) {
+                    if (!line.startsWith("import com.example.")) {
+                        imports.add(line.trim())
+                    }
+                } else {
+                    if (inImports && line.isBlank()) continue
+                    inImports = false
+                    codeLines.add(line)
+                }
+            }
+        }
+        
+        targetFile.bufferedWriter().use { writer ->
+            writer.write("package com.example\n\n")
+            imports.sorted().forEach { writer.write("$it\n") }
+            writer.write("\n")
+            codeLines.forEach { writer.write("$it\n") }
+        }
+    }
+}
+
