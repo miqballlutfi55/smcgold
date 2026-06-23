@@ -48,6 +48,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.ElectricBolt
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Save
@@ -2091,6 +2092,7 @@ fun ExecutionScreen(
     var showSaveDialog by remember { mutableStateOf(false) }
     var showLoadDialog by remember { mutableStateOf(false) }
     var savePlanName by remember { mutableStateOf("") }
+    var showActionMenu by remember { mutableStateOf(false) }
 
     // Calculations
     val totalRiskUsd = execBal * (riskPercent / 100.0)
@@ -2129,21 +2131,85 @@ fun ExecutionScreen(
             // 1. TITLE ROW
             item {
                 Spacer(modifier = Modifier.height(8.dp))
-                Column {
-                    Text(
-                        text = "RISK CALCULATOR",
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Black,
-                        color = TextPrimary,
-                        letterSpacing = 1.sp
-                    )
-                    Text(
-                        text = "INSTANT POSITION & JURNAL TRADING",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = ElectricBlue,
-                        letterSpacing = 1.5.sp
-                    )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
+                        Text(
+                            text = "RISK CALCULATOR",
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Black,
+                            color = TextPrimary,
+                            letterSpacing = 1.sp
+                        )
+                        Text(
+                            text = "INSTANT POSITION & JURNAL TRADING",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = ElectricBlue,
+                            letterSpacing = 1.5.sp
+                        )
+                    }
+                    Box {
+                        val context = androidx.compose.ui.platform.LocalContext.current
+                        androidx.compose.material3.IconButton(
+                            onClick = { showActionMenu = true },
+                            modifier = Modifier
+                                .size(36.dp)
+                                .background(Color(0xFF1E2430), RoundedCornerShape(8.dp))
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = "Journal Actions",
+                                tint = TextSecondary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                        androidx.compose.material3.DropdownMenu(
+                            expanded = showActionMenu,
+                            onDismissRequest = { showActionMenu = false },
+                            modifier = Modifier.background(CardBackground)
+                        ) {
+                            androidx.compose.material3.DropdownMenuItem(
+                                text = { Text("Export CSV", color = TextPrimary) },
+                                onClick = {
+                                    showActionMenu = false
+                                    com.example.JournalExportHelper.exportToCsv(context, journalTimeline)
+                                }
+                            )
+                            androidx.compose.material3.DropdownMenuItem(
+                                text = { Text("Export PDF", color = TextPrimary) },
+                                onClick = {
+                                    showActionMenu = false
+                                    com.example.JournalExportHelper.exportToPdf(context, journalTimeline)
+                                }
+                            )
+                            androidx.compose.material3.DropdownMenuItem(
+                                text = { Text("Load Plan", color = TextPrimary) },
+                                onClick = {
+                                    showActionMenu = false
+                                    showLoadDialog = true
+                                }
+                            )
+                            androidx.compose.material3.DropdownMenuItem(
+                                text = { Text("Save Plan", color = TextPrimary) },
+                                onClick = {
+                                    showActionMenu = false
+                                    savePlanName = currentLoadedName ?: ""
+                                    showSaveDialog = true
+                                }
+                            )
+                            androidx.compose.material3.DropdownMenuItem(
+                                text = { Text("Reset Journal", color = CrimsonRed) },
+                                onClick = {
+                                    showActionMenu = false
+                                    viewModel.resetJournalTimeline()
+                                }
+                            )
+                        }
+                    }
                 }
             }
 
@@ -2172,56 +2238,6 @@ fun ExecutionScreen(
                                 color = TextSecondary,
                                 letterSpacing = 2.sp
                             )
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                val context = androidx.compose.ui.platform.LocalContext.current
-                                IconButton(
-                                    onClick = {
-                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        com.example.JournalExportHelper.exportToCsv(context, journalTimeline)
-                                    },
-                                    modifier = Modifier.size(32.dp).background(Color(0xFF0F2618), RoundedCornerShape(8.dp))
-                                ) {
-                                    Text("CSV", color = ElectricBlue, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                                }
-                                IconButton(
-                                    onClick = {
-                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        com.example.JournalExportHelper.exportToPdf(context, journalTimeline)
-                                    },
-                                    modifier = Modifier.size(32.dp).background(Color(0xFF260F0F), RoundedCornerShape(8.dp))
-                                ) {
-                                    Text("PDF", color = CrimsonRed, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                                }
-                                IconButton(
-                                    onClick = {
-                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        showLoadDialog = true
-                                    },
-                                    modifier = Modifier.size(32.dp).background(ElectricBlue, RoundedCornerShape(8.dp))
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.List,
-                                        contentDescription = "Load Journal",
-                                        tint = Color.White,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                }
-                                IconButton(
-                                    onClick = {
-                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        savePlanName = currentLoadedName ?: ""
-                                        showSaveDialog = true
-                                    },
-                                    modifier = Modifier.size(32.dp).background(NeonGreen, RoundedCornerShape(8.dp))
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Save,
-                                        contentDescription = "Save Journal",
-                                        tint = Color.Black,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                }
-                            }
                         }
                         Spacer(modifier = Modifier.height(4.dp))
                         
@@ -2987,6 +3003,10 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         _journalOverrides.value = currentMap
         _loadedJournalPlanId.value = null
         _loadedJournalPlanName.value = null
+    }
+
+    fun resetJournalTimeline() {
+        _journalOverrides.value = emptyMap()
     }
 
     data class JournalDayCalc(
