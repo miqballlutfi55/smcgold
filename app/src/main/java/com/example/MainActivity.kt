@@ -386,6 +386,7 @@ class JournalPlanRepository(private val dao: JournalPlanDao) {
         dao.deleteJournalPlan(plan)
     }
 }
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 fun AnalyticsScreen(
     viewModel: AppViewModel,
@@ -718,6 +719,170 @@ fun AnalyticsScreen(
                             Column(horizontalAlignment = Alignment.End) {
                                 Text("NET CAPITAL CHANGE", color = TextSecondary, fontSize = 9.sp, fontWeight = FontWeight.Bold)
                                 Text("+" + String.format(Locale.US, "%,.2f%%", projections.totalReturnPercentage), color = ElectricBlue, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+            }
+
+            // PROBABILITY METER (Journal)
+            item {
+                val journalTimeline by viewModel.journalProjectionResult.collectAsState()
+                val jDays = journalTimeline.size
+                val jWinDays = journalTimeline.count { it.state == 1 }
+                val jLossDays = journalTimeline.count { it.state == 2 }
+                val jWinRate = if ((jWinDays + jLossDays) > 0) (jWinDays.toDouble() / (jWinDays + jLossDays)) * 100.0 else 0.0
+
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = CardBackground),
+                    shape = RoundedCornerShape(12.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF333333))
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "JOURNAL WIN RATE PROBABILITY",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TextSecondary,
+                            letterSpacing = 2.sp,
+                            modifier = Modifier.padding(bottom = 16.dp)
+                        )
+                        
+                        // Speedometer UI
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(140.dp),
+                            contentAlignment = Alignment.BottomCenter
+                        ) {
+                            androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
+                                val radius = size.width / 3f
+                                val strokeWidth = 30f
+                                
+                                // Background track
+                                drawArc(
+                                    color = Color.DarkGray.copy(alpha = 0.5f),
+                                    startAngle = 180f,
+                                    sweepAngle = 180f,
+                                    useCenter = false,
+                                    style = androidx.compose.ui.graphics.drawscope.Stroke(strokeWidth, cap = androidx.compose.ui.graphics.StrokeCap.Round),
+                                    size = androidx.compose.ui.geometry.Size(radius * 2, radius * 2),
+                                    topLeft = androidx.compose.ui.geometry.Offset(center.x - radius, center.y - radius + 20f)
+                                )
+                                
+                                // Color segments
+                                val color = when {
+                                    jWinRate >= 55.0 -> NeonGreen
+                                    jWinRate >= 40.0 -> Color(0xFFECA332) // Orange/Yellow
+                                    else -> CrimsonRed
+                                }
+                                
+                                drawArc(
+                                    color = color,
+                                    startAngle = 180f,
+                                    sweepAngle = 180f * (jWinRate.toFloat() / 100f),
+                                    useCenter = false,
+                                    style = androidx.compose.ui.graphics.drawscope.Stroke(strokeWidth, cap = androidx.compose.ui.graphics.StrokeCap.Round),
+                                    size = androidx.compose.ui.geometry.Size(radius * 2, radius * 2),
+                                    topLeft = androidx.compose.ui.geometry.Offset(center.x - radius, center.y - radius + 20f)
+                                )
+                            }
+                            
+                            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(bottom = 10.dp)) {
+                                Text(
+                                    text = String.format(java.util.Locale.US, "%.1f%%", jWinRate),
+                                    fontSize = 32.sp,
+                                    fontWeight = FontWeight.Black,
+                                    color = TextPrimary
+                                )
+                                val statusText = when {
+                                    jWinRate >= 55.0 -> "ON TRACK"
+                                    jWinRate >= 40.0 -> "WARNING"
+                                    else -> "FAIL"
+                                }
+                                val statusColor = when {
+                                    jWinRate >= 55.0 -> NeonGreen
+                                    jWinRate >= 40.0 -> Color(0xFFECA332)
+                                    else -> CrimsonRed
+                                }
+                                Text(
+                                    text = statusText,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = statusColor
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // CALENDAR HEATMAP (Journal)
+            item {
+                val journalTimeline by viewModel.journalProjectionResult.collectAsState()
+                
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = CardBackground),
+                    shape = RoundedCornerShape(12.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF333333))
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp)
+                    ) {
+                        Text(
+                            text = "TRADING CALENDAR HEATMAP",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TextSecondary,
+                            letterSpacing = 2.sp,
+                            modifier = Modifier.padding(bottom = 12.dp)
+                        )
+                        
+                        androidx.compose.foundation.layout.FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            journalTimeline.forEach { day ->
+                                val boxColor = when (day.state) {
+                                    1 -> NeonGreen
+                                    2 -> CrimsonRed
+                                    else -> Color(0xFF333333) // Gray
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .size(24.dp)
+                                        .clip(RoundedCornerShape(4.dp))
+                                        .background(boxColor)
+                                )
+                            }
+                        }
+                        
+                        Spacer(modifier = Modifier.height(16.dp))
+                        
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(modifier = Modifier.size(10.dp).clip(androidx.compose.foundation.shape.CircleShape).background(NeonGreen))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Win", color = TextSecondary, fontSize = 10.sp)
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(modifier = Modifier.size(10.dp).clip(androidx.compose.foundation.shape.CircleShape).background(CrimsonRed))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Loss", color = TextSecondary, fontSize = 10.sp)
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(modifier = Modifier.size(10.dp).clip(androidx.compose.foundation.shape.CircleShape).background(Color(0xFF333333)))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("No Trade", color = TextSecondary, fontSize = 10.sp)
                             }
                         }
                     }
@@ -2121,6 +2286,35 @@ fun ExecutionScreen(
         else -> Triple("AGGRESSIVE WARNING", CrimsonRed, "High risk exposure! Standard SMC methods recommend max 1-2% risk per execution. Be prepared for severe drawdowns.")
     }
 
+    // Psycho-Lock Logic
+    val lossStreak = journalTimeline.reversed().takeWhile { it.state == 2 }.size
+    var showPsychoLockDialog by remember(lossStreak) { mutableStateOf(lossStreak >= 3) }
+
+    if (showPsychoLockDialog) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showPsychoLockDialog = false },
+            containerColor = CardBackground,
+            title = {
+                Text(
+                    text = "🛑 MAX LOSS STREAK REACHED!",
+                    fontWeight = FontWeight.Black,
+                    color = CrimsonRed
+                )
+            },
+            text = {
+                Text(
+                    text = "You have recorded 3 or more consecutive losses. Step away from the charts, clear your head, and review your trading plan.",
+                    color = TextPrimary
+                )
+            },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = { showPsychoLockDialog = false }) {
+                    Text("I UNDERSTAND", color = NeonGreen)
+                }
+            }
+        )
+    }
+
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -2218,6 +2412,37 @@ fun ExecutionScreen(
                 }
             }
 
+            // TARGET REACHED BANNER
+            item {
+                if (isPropFirmMode) {
+                    val targetProfitPct by viewModel.targetProfitPercent.collectAsState()
+                    val targetUsd = execBal * (targetProfitPct / 100.0)
+                    val estimatedTrades = if (totalRewardUsd > 0) Math.ceil(targetUsd / totalRewardUsd).toInt() else 0
+                    
+                    if (estimatedTrades > 0) {
+                        Card(
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
+                            colors = CardDefaults.cardColors(containerColor = NeonGreen.copy(alpha = 0.1f)),
+                            shape = RoundedCornerShape(8.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, NeonGreen.copy(alpha = 0.3f))
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(vertical = 8.dp, horizontal = 12.dp).fillMaxWidth(),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "🎯 Target Reached in: $estimatedTrades Trades/Days",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = NeonGreen
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
             // SEGMENTED BUTTON FOR PROP FIRM MODE
             item {
                 Row(
@@ -2301,7 +2526,35 @@ fun ExecutionScreen(
                             color = riskAdviceColor
                         )
 
-                        Spacer(modifier = Modifier.height(8.dp))
+                        // Multiple Take Profit (Scaling Out)
+                        if (computedLot > 0.0) {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text("TP1 (Secure)", fontSize = 10.sp, color = TextSecondary)
+                                    Text("50%", fontSize = 9.sp, color = ElectricBlue)
+                                    Text(String.format(Locale.US, "%.2f", computedLot * 0.5), fontSize = 12.sp, color = TextPrimary, fontWeight = FontWeight.Bold)
+                                }
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text("TP2 (Main)", fontSize = 10.sp, color = TextSecondary)
+                                    Text("30%", fontSize = 9.sp, color = ElectricBlue)
+                                    Text(String.format(Locale.US, "%.2f", computedLot * 0.3), fontSize = 12.sp, color = TextPrimary, fontWeight = FontWeight.Bold)
+                                }
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text("Runner", fontSize = 10.sp, color = TextSecondary)
+                                    Text("20%", fontSize = 9.sp, color = ElectricBlue)
+                                    Text(String.format(Locale.US, "%.2f", computedLot * 0.2), fontSize = 12.sp, color = TextPrimary, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+                        androidx.compose.material3.HorizontalDivider(color = Color(0xFF333333))
+                        Spacer(modifier = Modifier.height(16.dp))
+
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -2463,6 +2716,42 @@ fun ExecutionScreen(
                                 }
 
                                 if (isPropFirmMode) {
+                                    val isTrailing by viewModel.isTrailingDrawdown.collectAsState()
+                                    val targetProfitPct by viewModel.targetProfitPercent.collectAsState()
+
+                                    // DRAWDOWN TYPE TOGGLE
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(Color(0xFF161C2C))
+                                            .padding(4.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .clip(RoundedCornerShape(6.dp))
+                                                .background(if (!isTrailing) ElectricBlue else Color.Transparent)
+                                                .clickable { viewModel.isTrailingDrawdown.value = false }
+                                                .padding(vertical = 8.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text("Static Drawdown", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = if (!isTrailing) Color.White else TextSecondary)
+                                        }
+                                        Box(
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .clip(RoundedCornerShape(6.dp))
+                                                .background(if (isTrailing) ElectricBlue else Color.Transparent)
+                                                .clickable { viewModel.isTrailingDrawdown.value = true }
+                                                .padding(vertical = 8.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text("Trailing Drawdown", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = if (isTrailing) Color.White else TextSecondary)
+                                        }
+                                    }
+
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
                                         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -2481,6 +2770,13 @@ fun ExecutionScreen(
                                         )
                                     }
                                     
+                                    SMCInputCard(
+                                        label = "TARGET PROFIT (%)",
+                                        value = targetProfitPct,
+                                        onValueChange = { viewModel.targetProfitPercent.value = it },
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+
                                     // Prop Firm Info Card
                                     Card(
                                         modifier = Modifier.fillMaxWidth(),
@@ -2493,7 +2789,7 @@ fun ExecutionScreen(
                                                 modifier = Modifier.fillMaxWidth(),
                                                 horizontalArrangement = Arrangement.SpaceBetween
                                             ) {
-                                                Text("True Equity:", color = TextSecondary, fontSize = 11.sp)
+                                                Text("True Equity (Risk Base):", color = TextSecondary, fontSize = 11.sp)
                                                 Text(FormatHelper.formatUsd(baseEquity), color = ElectricBlue, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                                             }
                                             Spacer(modifier = Modifier.height(4.dp))
@@ -2699,6 +2995,16 @@ fun ExecutionScreen(
                                     text = "Tap to mark profit, double tap for loss (cumulative)",
                                     fontSize = 10.sp,
                                     color = TextSecondary
+                                )
+                            } else {
+                                val growthPercent = if (execBal > 0.0) ((dayData.endBalance - execBal) / execBal) * 100.0 else 0.0
+                                val growthText = String.format(java.util.Locale.US, "Total Growth: %s%.2f%%", if (growthPercent >= 0) "+" else "", growthPercent)
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = growthText,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (growthPercent >= 0) NeonGreen else CrimsonRed
                                 )
                             }
                         }
@@ -3076,6 +3382,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     val isPropFirmMode = MutableStateFlow(false)
     val maxDailyDrawdown = MutableStateFlow(5.0)
     val maxTotalDrawdown = MutableStateFlow(10.0)
+    val targetProfitPercent = MutableStateFlow(8.0)
+    val isTrailingDrawdown = MutableStateFlow(false)
     val execRiskPercent = MutableStateFlow(2.0)
     val execStopLoss = MutableStateFlow(20.0)
     val execPipValue = MutableStateFlow(10.0) // USD per standard lot per pip
@@ -3120,7 +3428,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     )
 
     val journalProjectionResult: StateFlow<List<JournalDayCalc>> = combine(
-        listOf(execBalance, execRiskPercent, execRewardPercent, journalDays, _journalOverrides)
+        listOf(execBalance, execRiskPercent, execRewardPercent, journalDays, _journalOverrides, isPropFirmMode, maxTotalDrawdown, isTrailingDrawdown)
     ) { array ->
         val startBal = array[0] as Double
         val riskPct = array[1] as Double
@@ -3128,19 +3436,37 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         val days = array[3] as Int
         @Suppress("UNCHECKED_CAST")
         val overrides = array[4] as Map<Int, Int>
+        val propFirmMode = array[5] as Boolean
+        val maxTotalDrawdownPct = array[6] as Double
+        val trailingDrawdown = array[7] as Boolean
 
         val list = ArrayList<JournalDayCalc>()
         var currentBalance = startBal
+        var highestBalance = startBal
 
         for (day in 1..days) {
             val state = overrides[day] ?: 0
+            
+            val equityBase = if (propFirmMode) {
+                if (trailingDrawdown) {
+                    highestBalance * (maxTotalDrawdownPct / 100.0)
+                } else {
+                    startBal * (maxTotalDrawdownPct / 100.0)
+                }
+            } else {
+                currentBalance
+            }
+
             val pLoss = when (state) {
-                1 -> currentBalance * (rewardPct / 100.0)
-                2 -> -(currentBalance * (riskPct / 100.0))
+                1 -> equityBase * (rewardPct / 100.0)
+                2 -> -(equityBase * (riskPct / 100.0))
                 else -> 0.0
             }
             
             val endBal = currentBalance + pLoss
+            
+            if (endBal > highestBalance) highestBalance = endBal
+
             list.add(
                 JournalDayCalc(
                     day = day,
