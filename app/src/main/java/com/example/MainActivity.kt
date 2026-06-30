@@ -1580,7 +1580,6 @@ fun CompoundScreen(
     val initBalance by viewModel.initialBalance.collectAsState()
     val targetPipsVal by viewModel.targetPips.collectAsState()
     val stepSizeVal by viewModel.stepSize.collectAsState()
-    val maxLotVal by viewModel.maxLot.collectAsState()
     val totalDaysVal by viewModel.totalDays.collectAsState()
     val initialLotVal by viewModel.initialLot.collectAsState()
     val riskRewardVal by viewModel.riskRewardRatio.collectAsState()
@@ -1769,6 +1768,40 @@ fun CompoundScreen(
                                 }
                             }
 
+                            val isCompoundFundedMode by viewModel.isCompoundFundedMode.collectAsState()
+                            if (isCompoundFundedMode) {
+                                Spacer(modifier = Modifier.height(12.dp))
+                                val targetPct by viewModel.compoundTargetProfitPercent.collectAsState()
+                                val targetVal = initBalance * (targetPct / 100.0)
+                                var passDay = -1
+                                for (day in projections.daysList) {
+                                    if ((day.endBalance - initBalance) >= targetVal) {
+                                        passDay = day.day
+                                        break
+                                    }
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(Color(0xFFE0EAFD))
+                                        .padding(10.dp)
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.Center,
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text(
+                                            text = "🎯 Lulus di Hari ke-" + if (passDay > 0) passDay.toString() else "Meleset",
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFF072960)
+                                        )
+                                    }
+                                }
+                            }
+
                             Spacer(modifier = Modifier.height(16.dp))
                             Button(
                                 onClick = {
@@ -1853,13 +1886,51 @@ fun CompoundScreen(
                             Column(
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
+                                val isCompoundFundedMode by viewModel.isCompoundFundedMode.collectAsState()
+                                val compoundDailyLossLimit by viewModel.compoundDailyLossLimit.collectAsState()
+                                val compoundTargetProfitPercent by viewModel.compoundTargetProfitPercent.collectAsState()
+
+                                // SEGMENTED BUTTON FOR REAL VS FUNDED
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(Color(0xFF161C2C))
+                                        .padding(4.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    val isReal = !isCompoundFundedMode
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .clip(RoundedCornerShape(6.dp))
+                                            .background(if (isReal) ElectricBlue else Color.Transparent)
+                                            .clickable { viewModel.isCompoundFundedMode.value = false }
+                                            .padding(vertical = 8.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text("Real Account", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = if (isReal) Color.White else TextSecondary)
+                                    }
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .clip(RoundedCornerShape(6.dp))
+                                            .background(if (isCompoundFundedMode) ElectricBlue else Color.Transparent)
+                                            .clickable { viewModel.isCompoundFundedMode.value = true }
+                                            .padding(vertical = 8.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text("Funded Account", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = if (isCompoundFundedMode) Color.White else TextSecondary)
+                                    }
+                                }
+
                                 // Row 1: INITIAL ($) & KURS IDR (2-Column Proportional Mobile Setup!)
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
                                     SMCInputCard(
-                                        label = "INITIAL ($)",
+                                        label = if (isCompoundFundedMode) "FUNDED BALANCE ($)" else "INITIAL ($)",
                                         value = initBalance,
                                         onValueChange = { viewModel.initialBalance.value = it },
                                         subText = FormatHelper.formatIdr(initBalance, currentKursIdr),
@@ -1870,6 +1941,33 @@ fun CompoundScreen(
                                         value = currentKursIdr,
                                         onValueChange = { viewModel.kursIdr.value = it },
                                         modifier = Modifier.weight(1f)
+                                    )
+                                }
+
+                                if (isCompoundFundedMode) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        SMCInputCard(
+                                            label = "DAILY LOSS LIMIT (%)",
+                                            value = compoundDailyLossLimit,
+                                            onValueChange = { viewModel.compoundDailyLossLimit.value = it },
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                        SMCInputCard(
+                                            label = "TARGET PROFIT (%)",
+                                            value = compoundTargetProfitPercent,
+                                            onValueChange = { viewModel.compoundTargetProfitPercent.value = it },
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                    }
+                                    val dailyLimitUsd = initBalance * (compoundDailyLossLimit / 100.0)
+                                    Text(
+                                        text = "Daily Limit: " + FormatHelper.formatUsd(dailyLimitUsd),
+                                        fontSize = 11.sp,
+                                        color = CrimsonRed,
+                                        modifier = Modifier.padding(start = 4.dp, bottom = 4.dp)
                                     )
                                 }
 
@@ -1892,7 +1990,8 @@ fun CompoundScreen(
                                     )
                                 }
 
-                                // Row 3: INIT LOT & MAX LOT
+                                // Row 3: INIT LOT & LEVERAGE
+                                val leverageVal by viewModel.leverage.collectAsState()
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -1904,9 +2003,9 @@ fun CompoundScreen(
                                         modifier = Modifier.weight(1f)
                                     )
                                     SMCInputCard(
-                                        label = "MAX LOT",
-                                        value = maxLotVal,
-                                        onValueChange = { viewModel.maxLot.value = it },
+                                        label = "LEVERAGE (1:X)",
+                                        value = leverageVal,
+                                        onValueChange = { viewModel.leverage.value = it },
                                         modifier = Modifier.weight(1f)
                                     )
                                 }
@@ -2261,6 +2360,8 @@ fun ExecutionScreen(
     var savePlanName by remember { mutableStateOf("") }
     var showActionMenu by remember { mutableStateOf(false) }
 
+    val execTakeProfit by viewModel.execTakeProfit.collectAsState()
+
     // Calculations
     val baseEquity = if (isPropFirmMode) execBal * (maxTotalDrawdown / 100.0) else execBal
     val dailyLimitUsd = if (isPropFirmMode) execBal * (maxDailyDrawdown / 100.0) else 0.0
@@ -2268,7 +2369,8 @@ fun ExecutionScreen(
     val totalRiskUsd = baseEquity * (riskPercent / 100.0)
     val totalRiskIdr = totalRiskUsd * kursRate
 
-    val totalRewardUsd = baseEquity * (execRewardPercent / 100.0)
+    val derivedRewardPercent = if (stopLossVal > 0) (execTakeProfit / stopLossVal) * riskPercent else 0.0
+    val totalRewardUsd = baseEquity * (derivedRewardPercent / 100.0)
     val totalRewardIdr = totalRewardUsd * kursRate
 
     // Formula: Suggested Lot = Risk $ / (Stop Loss pips * Pip Value per standard lot)
@@ -2277,7 +2379,7 @@ fun ExecutionScreen(
 
     // Target TP in Pips = Reward USD / (Suggested Lot * Pip Value)
     val lotValueFactor = computedLot * pipVal
-    val calculatedTpPips = if (lotValueFactor > 0.0) totalRewardUsd / lotValueFactor else 0.0
+    val calculatedTpPips = execTakeProfit
 
     // Design risk advice content dynamically
     val (riskLabel, riskAdviceColor, riskAdviceText) = when {
@@ -2528,6 +2630,10 @@ fun ExecutionScreen(
 
                         // Multiple Take Profit (Scaling Out)
                         if (computedLot > 0.0) {
+                            val tp1Lot = java.math.BigDecimal(computedLot * 0.5).setScale(2, java.math.RoundingMode.HALF_UP).toDouble()
+                            val tp2Lot = java.math.BigDecimal(computedLot * 0.3).setScale(2, java.math.RoundingMode.HALF_UP).toDouble()
+                            val runnerLot = maxOf(0.0, java.math.BigDecimal(computedLot - tp1Lot - tp2Lot).setScale(2, java.math.RoundingMode.HALF_UP).toDouble())
+
                             Spacer(modifier = Modifier.height(12.dp))
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -2536,17 +2642,17 @@ fun ExecutionScreen(
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Text("TP1 (Secure)", fontSize = 10.sp, color = TextSecondary)
                                     Text("50%", fontSize = 9.sp, color = ElectricBlue)
-                                    Text(String.format(Locale.US, "%.2f", computedLot * 0.5), fontSize = 12.sp, color = TextPrimary, fontWeight = FontWeight.Bold)
+                                    Text(String.format(Locale.US, "%.2f", tp1Lot), fontSize = 12.sp, color = TextPrimary, fontWeight = FontWeight.Bold)
                                 }
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Text("TP2 (Main)", fontSize = 10.sp, color = TextSecondary)
                                     Text("30%", fontSize = 9.sp, color = ElectricBlue)
-                                    Text(String.format(Locale.US, "%.2f", computedLot * 0.3), fontSize = 12.sp, color = TextPrimary, fontWeight = FontWeight.Bold)
+                                    Text(String.format(Locale.US, "%.2f", tp2Lot), fontSize = 12.sp, color = TextPrimary, fontWeight = FontWeight.Bold)
                                 }
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Text("Runner", fontSize = 10.sp, color = TextSecondary)
-                                    Text("20%", fontSize = 9.sp, color = ElectricBlue)
-                                    Text(String.format(Locale.US, "%.2f", computedLot * 0.2), fontSize = 12.sp, color = TextPrimary, fontWeight = FontWeight.Bold)
+                                    Text("Sisa", fontSize = 9.sp, color = ElectricBlue)
+                                    Text(String.format(Locale.US, "%.2f", runnerLot), fontSize = 12.sp, color = TextPrimary, fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
@@ -2829,24 +2935,39 @@ fun ExecutionScreen(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
-                                    SMCInputCard(
-                                        label = "REWARD (%)",
-                                        value = execRewardPercent,
-                                        onValueChange = { viewModel.execRewardPercent.value = it },
-                                        modifier = Modifier.weight(1f)
-                                    )
+                                    val execTakeProfit by viewModel.execTakeProfit.collectAsState()
                                     SMCInputCard(
                                         label = "TAKE PROFIT (PIPS)",
-                                        value = calculatedTpPips,
-                                        onValueChange = { targetPipsInput ->
-                                            val currentFactor = computedLot * pipVal
-                                            if (execBal > 0.0 && currentFactor > 0.0) {
-                                                val derivedRewardUsd = targetPipsInput * currentFactor
-                                                viewModel.execRewardPercent.value = (derivedRewardUsd / execBal) * 100.0
-                                            }
-                                        },
+                                        value = execTakeProfit,
+                                        onValueChange = { viewModel.execTakeProfit.value = it },
                                         modifier = Modifier.weight(1f)
                                     )
+                                    val derivedRewardPercent = if (stopLossVal > 0) (execTakeProfit / stopLossVal) * riskPercent else 0.0
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(Color(0xFF161C2C))
+                                            .border(1.dp, Color(0xFF333333), RoundedCornerShape(8.dp))
+                                            .padding(12.dp)
+                                    ) {
+                                        Column {
+                                            Text(
+                                                text = "REWARD (%)",
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = TextSecondary,
+                                                letterSpacing = 1.sp
+                                            )
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Text(
+                                                text = String.format(Locale.US, "%.2f%%", derivedRewardPercent),
+                                                fontSize = 20.sp,
+                                                fontWeight = FontWeight.Black,
+                                                color = NeonGreen
+                                            )
+                                        }
+                                    }
                                 }
 
                                 Row(
@@ -3327,13 +3448,17 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     val initialBalance = MutableStateFlow(1000.0)
     val targetPips = MutableStateFlow(100.0)
     val stepSize = MutableStateFlow(100.0)
-    val maxLot = MutableStateFlow(50.0)
+    val leverage = MutableStateFlow(100.0) // Replaces maxLot
     val totalDays = MutableStateFlow(30)
     val initialLot = MutableStateFlow(0.01)
     val riskRewardRatio = MutableStateFlow(2.0)
     val kursIdr = MutableStateFlow(16200.0)
     val pipValue = MutableStateFlow(10.0)
     val pipValuePreset = MutableStateFlow("EURUSD")
+    
+    val isCompoundFundedMode = MutableStateFlow(false)
+    val compoundDailyLossLimit = MutableStateFlow(5.0)
+    val compoundTargetProfitPercent = MutableStateFlow(10.0)
 
     // Manual Day overrides: Map of day index (1-based) to DayResult
     private val _dayOverrides = MutableStateFlow<Map<Int, DayResult>>(emptyMap())
@@ -3351,26 +3476,30 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             initialBalance,
             targetPips,
             stepSize,
-            maxLot,
+            leverage,
             totalDays,
             initialLot,
             riskRewardRatio,
             pipValue,
-            _dayOverrides
+            _dayOverrides,
+            isCompoundFundedMode,
+            compoundDailyLossLimit
         )
     ) { array ->
         val initBal = array[0] as Double
         val targetPipsVal = array[1] as Double
         val step = array[2] as Double
-        val maxLotVal = array[3] as Double
+        val levVal = array[3] as Double
         val daysCount = array[4] as Int
         val initLotVal = array[5] as Double
         val rr = array[6] as Double
         val pipVal = array[7] as Double
         @Suppress("UNCHECKED_CAST")
         val overrides = array[8] as Map<Int, DayResult>
+        val isFunded = array[9] as Boolean
+        val dailyLossLim = array[10] as Double
         
-        calculateProjection(initBal, targetPipsVal, step, maxLotVal, daysCount, initLotVal, rr, pipVal, overrides)
+        calculateProjection(initBal, targetPipsVal, step, levVal, daysCount, initLotVal, rr, pipVal, overrides, isFunded, dailyLossLim)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
@@ -3386,6 +3515,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     val isTrailingDrawdown = MutableStateFlow(false)
     val execRiskPercent = MutableStateFlow(2.0)
     val execStopLoss = MutableStateFlow(20.0)
+    val execTakeProfit = MutableStateFlow(60.0)
     val execPipValue = MutableStateFlow(10.0) // USD per standard lot per pip
     val execPipValuePreset = MutableStateFlow("EURUSD")
     val execRewardPercent = MutableStateFlow(6.0) // Target reward exposure %
@@ -3489,12 +3619,14 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         initialBal: Double,
         pips: Double,
         step: Double,
-        maxLotVal: Double,
+        leverage: Double,
         days: Int,
         initLotVal: Double,
         rr: Double,
         pipVal: Double,
-        overrides: Map<Int, DayResult>
+        overrides: Map<Int, DayResult>,
+        isFunded: Boolean,
+        dailyLossLimit: Double
     ): CompoundProjectionResult {
         val list = ArrayList<DayCalculation>()
         var currentBalance = initialBal
@@ -3502,10 +3634,22 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         val resolvedRr = if (rr <= 0.0) 1.0 else rr
 
         for (day in 1..days) {
-            val steps = if (step > 0.0) maxOf(1.0, floor(currentBalance / step)) else 1.0
-            var currentLot = steps * resolvedInitLot
-            if (currentLot < resolvedInitLot) currentLot = resolvedInitLot
-            if (currentLot > maxLotVal) currentLot = maxLotVal
+            val equityToUse = if (isFunded) {
+                val cumulativeProfit = currentBalance - initialBal
+                (initialBal * (dailyLossLimit / 100.0)) + cumulativeProfit
+            } else {
+                currentBalance
+            }
+
+            val steps = if (step > 0.0) maxOf(0.0, floor(maxOf(0.0, equityToUse) / step)) else 1.0
+            var calculatedLot = steps * resolvedInitLot
+            if (calculatedLot < resolvedInitLot) calculatedLot = resolvedInitLot
+
+            val referenceBalance = if (isFunded) initialBal else currentBalance
+            val maxLotVal = (referenceBalance * leverage) / 100000.0
+
+            var currentLot = minOf(calculatedLot, maxLotVal)
+            if (currentLot < 0.0) currentLot = 0.0
 
             val winAmount = currentLot * pips * pipVal
             val lossAmount = winAmount / resolvedRr
@@ -3566,7 +3710,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         initialBalance.value = 1000.0
         targetPips.value = 100.0
         stepSize.value = 100.0
-        maxLot.value = 50.0
+        leverage.value = 100.0
         totalDays.value = 30
         initialLot.value = 0.01
         riskRewardRatio.value = 2.0
@@ -3583,7 +3727,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 initialBalance = initialBalance.value,
                 targetPips = targetPips.value,
                 stepSize = stepSize.value,
-                maxLot = maxLot.value,
+                maxLot = leverage.value,
                 totalDays = totalDays.value,
                 initialLot = initialLot.value,
                 riskRewardRatio = riskRewardRatio.value,
@@ -3601,7 +3745,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         initialBalance.value = plan.initialBalance
         targetPips.value = plan.targetPips
         stepSize.value = plan.stepSize
-        maxLot.value = plan.maxLot
+        leverage.value = plan.maxLot
         totalDays.value = plan.totalDays
         initialLot.value = plan.initialLot
         riskRewardRatio.value = plan.riskRewardRatio
@@ -3642,6 +3786,9 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             val overridesStr = _journalOverrides.value.entries.joinToString(",") { "${it.key}:${it.value}" }
             
+            val derivedReward = if (execStopLoss.value > 0) (execTakeProfit.value / execStopLoss.value) * execRiskPercent.value else 0.0
+            execRewardPercent.value = derivedReward
+
             val plan = JournalPlan(
                 id = _loadedJournalPlanId.value ?: 0,
                 name = planName,
@@ -3670,6 +3817,10 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         execPipValuePreset.value = plan.pipPreset
         execRewardPercent.value = plan.rewardPercent
         journalDays.value = plan.journalDays
+
+        if (plan.riskPercent > 0) {
+            execTakeProfit.value = (plan.rewardPercent * plan.stopLoss) / plan.riskPercent
+        }
 
         val overridesMap = mutableMapOf<Int, Int>()
         if (plan.overridesData.isNotEmpty()) {
